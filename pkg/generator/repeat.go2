@@ -1,0 +1,37 @@
+package generator
+
+import (
+	"context"
+)
+
+func Repeat[T any](ctx context.Context, values ...T) <- chan T {
+	s := make(chan T)
+	go func() {
+		defer close(s)
+		for {
+			for _, v := range values {
+				select {
+				case <- ctx.Done():
+					return
+				case s <- v:
+				}
+			}
+		}
+	}()
+	return s
+}
+
+func RepeatFn[T any](ctx context.Context, fn func() T) <- chan T {
+	s := make(chan T)
+	go func() {
+		defer close(s)
+		for {
+			select {
+			case <- ctx.Done():
+				return
+			case s <- fn():
+			}
+		}
+	}()
+	return s
+}

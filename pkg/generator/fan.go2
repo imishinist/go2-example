@@ -1,0 +1,27 @@
+package generator
+
+func FanIn[T any](ctx context.Context, chs ...<-chan T) <- chan T {
+	var wg sync.WaitGroup
+	multiPlexedStream := make(chan T)
+
+	multiplex := func(c <- chan T) {
+		defer wg.Done()
+		for i := range c {
+			select {
+			case <- ctx.Done():
+				return
+			case multiPlexedStream <- i:
+			}
+		}
+	}
+
+	wg.Add(len(chs))
+	for _, c := range chs {
+		go multiplex(c)
+	}
+	go func() {
+		wg.Wait()
+		close(multiPlexedStream)
+	}()
+	return multiPlexedStream
+}

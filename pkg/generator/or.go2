@@ -1,0 +1,23 @@
+package generator
+
+func Or[T any](ctx context.Context, c <-chan T) <- chan T {
+	s := make(chan T)
+	go func() {
+		defer close(s)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case v, ok := <- c:
+				if !ok {
+					return
+				}
+				select {
+				case s <- v:
+				case <-ctx.Done():
+				}
+			}
+		}
+	}()
+	return s
+}

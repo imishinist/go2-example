@@ -1,0 +1,20 @@
+package generator
+
+import (
+	"context"
+)
+
+func Take[T any](ctx context.Context, stream <- chan T, num int) <- chan T {
+	s := make(chan T)
+	go func() {
+		defer close(s)
+		for i := 0; i < num; i++ {
+			select {
+			case <- ctx.Done():
+				return
+			case s <- <- stream:
+			}
+		}
+	}()
+	return s
+}
