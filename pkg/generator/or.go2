@@ -1,21 +1,32 @@
 package generator
 
-func Or[T any](ctx context.Context, c <-chan T) <- chan T {
+import (
+	"context"
+)
+
+func Or[T any](ctx context.Context, chs ...<-chan T) <- chan T {
+	switch len(chs) {
+	case 0:
+		return nil
+	case 1:
+		return chs[0]
+	}
 	s := make(chan T)
 	go func() {
 		defer close(s)
-		for {
+
+		switch len(chs) {
+		case 2:
 			select {
-			case <-ctx.Done():
-				return
-			case v, ok := <- c:
-				if !ok {
-					return
-				}
-				select {
-				case s <- v:
-				case <-ctx.Done():
-				}
+			case <- chs[0]:
+			case <- chs[1]:
+			}
+		default:
+			select {
+			case <- chs[0]:
+			case <- chs[1]:
+			case <- chs[2]:
+			case <-Or(ctx, append(chs[3:], s)...):
 			}
 		}
 	}()
