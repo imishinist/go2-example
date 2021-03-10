@@ -11,4 +11,4 @@ These codes are written in
 - repeatFn
 - take
 - fanIn
-- orDone
+- or
